@@ -1,20 +1,29 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Scissors, Calendar, LayoutDashboard } from "lucide-react";
+import { Menu, X, Scissors, Calendar, LayoutDashboard, LogIn, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut, isStaff } = useAuth();
 
   const navItems = [
     { name: "Início", path: "/", icon: Scissors },
     { name: "Agendar", path: "/booking", icon: Calendar },
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    ...(isStaff ? [{ name: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] : []),
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+    setIsMenuOpen(false);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -47,8 +56,33 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* CTA Button */}
-          <div className="hidden md:block">
+          {/* CTA and Auth Buttons */}
+          <div className="hidden md:flex items-center gap-4">
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Link to="/auth">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Entrar
+                </Link>
+              </Button>
+            )}
             <Button asChild variant="gold" size="lg">
               <Link to="/booking">Agendar Agora</Link>
             </Button>
@@ -89,6 +123,26 @@ const Header = () => {
                   <span className="font-body font-medium">{item.name}</span>
                 </Link>
               ))}
+              
+              {user ? (
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center gap-3 p-3 rounded-lg text-muted-foreground hover:bg-secondary transition-colors duration-300"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-body font-medium">Sair</span>
+                </button>
+              ) : (
+                <Link
+                  to="/auth"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 p-3 rounded-lg text-muted-foreground hover:bg-secondary transition-colors duration-300"
+                >
+                  <LogIn className="w-5 h-5" />
+                  <span className="font-body font-medium">Entrar</span>
+                </Link>
+              )}
+              
               <Button asChild variant="gold" className="mt-4">
                 <Link to="/booking" onClick={() => setIsMenuOpen(false)}>
                   Agendar Agora
