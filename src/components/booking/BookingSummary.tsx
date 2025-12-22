@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar, Clock, User, Scissors, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, Scissors, CheckCircle2, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { BookingData } from "@/pages/Booking";
@@ -25,7 +25,7 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
     setIsConfirmed(true);
     toast({
       title: "Agendamento Confirmado!",
-      description: "Você receberá uma confirmação por email.",
+      description: `${bookingData.customer.name}, você receberá uma confirmação por WhatsApp.`,
     });
   };
 
@@ -50,11 +50,19 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
         </h2>
 
         <p className="font-body text-muted-foreground mb-8 max-w-md mx-auto">
-          Seu horário foi reservado com sucesso. Enviamos os detalhes para o seu email.
+          Olá <strong>{bookingData.customer.name}</strong>, seu horário foi reservado com sucesso. 
+          Enviamos os detalhes para o WhatsApp <strong>{bookingData.customer.phone}</strong>.
         </p>
 
         <div className="bg-card border border-border rounded-xl p-6 max-w-sm mx-auto">
           <div className="space-y-4 text-left">
+            <div className="flex items-center gap-3">
+              <User className="w-5 h-5 text-primary" />
+              <div>
+                <p className="font-body text-sm text-muted-foreground">Cliente</p>
+                <p className="font-body font-medium text-foreground">{bookingData.customer.name}</p>
+              </div>
+            </div>
             <div className="flex items-center gap-3">
               <Scissors className="w-5 h-5 text-primary" />
               <div>
@@ -107,6 +115,44 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6 mb-8">
+        {/* Customer Info */}
+        <div className="mb-6 pb-6 border-b border-border">
+          <h3 className="font-display text-lg font-semibold text-foreground mb-4">
+            Dados do Cliente
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+              <User className="w-5 h-5 text-primary" />
+              <div>
+                <p className="font-body text-xs text-muted-foreground">Nome</p>
+                <p className="font-body font-medium text-foreground text-sm">
+                  {bookingData.customer.name}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+              <Phone className="w-5 h-5 text-primary" />
+              <div>
+                <p className="font-body text-xs text-muted-foreground">Telefone</p>
+                <p className="font-body font-medium text-foreground text-sm">
+                  {bookingData.customer.phone}
+                </p>
+              </div>
+            </div>
+            {bookingData.customer.email && (
+              <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-lg">
+                <Mail className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="font-body text-xs text-muted-foreground">Email</p>
+                  <p className="font-body font-medium text-foreground text-sm">
+                    {bookingData.customer.email}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid md:grid-cols-2 gap-6">
           {/* Service */}
           <div className="flex items-start gap-4 p-4 bg-secondary/50 rounded-lg">
