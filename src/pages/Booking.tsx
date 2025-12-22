@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import ServiceSelection from "@/components/booking/ServiceSelection";
 import BarberSelection from "@/components/booking/BarberSelection";
 import DateTimeSelection from "@/components/booking/DateTimeSelection";
+import CustomerInfo from "@/components/booking/CustomerInfo";
 import BookingSummary from "@/components/booking/BookingSummary";
 import { Check } from "lucide-react";
 
@@ -23,18 +24,26 @@ export interface Barber {
   rating: number;
 }
 
+export interface CustomerData {
+  name: string;
+  phone: string;
+  email?: string;
+}
+
 export interface BookingData {
   service: Service | null;
   barber: Barber | null;
   date: Date | null;
   time: string | null;
+  customer: CustomerData;
 }
 
 const steps = [
   { id: 1, title: "Serviço" },
   { id: 2, title: "Profissional" },
   { id: 3, title: "Data & Hora" },
-  { id: 4, title: "Confirmação" },
+  { id: 4, title: "Seus Dados" },
+  { id: 5, title: "Confirmação" },
 ];
 
 const Booking = () => {
@@ -44,10 +53,15 @@ const Booking = () => {
     barber: null,
     date: null,
     time: null,
+    customer: {
+      name: "",
+      phone: "",
+      email: "",
+    },
   });
 
   const handleNext = () => {
-    if (currentStep < 4) {
+    if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -62,19 +76,26 @@ const Booking = () => {
     setBookingData((prev) => ({ ...prev, ...data }));
   };
 
+  const updateCustomerData = (data: Partial<CustomerData>) => {
+    setBookingData((prev) => ({
+      ...prev,
+      customer: { ...prev.customer, ...data },
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
       <main className="flex-1 pt-24 pb-12">
         <div className="container mx-auto px-4">
           {/* Progress Steps */}
-          <div className="max-w-3xl mx-auto mb-12">
+          <div className="max-w-4xl mx-auto mb-12">
             <div className="flex items-center justify-between">
               {steps.map((step, index) => (
                 <div key={step.id} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <div
-                      className={`w-10 h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all duration-300 ${
+                      className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-body font-semibold text-sm transition-all duration-300 ${
                         currentStep > step.id
                           ? "bg-primary text-primary-foreground"
                           : currentStep === step.id
@@ -83,13 +104,13 @@ const Booking = () => {
                       }`}
                     >
                       {currentStep > step.id ? (
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4 md:w-5 md:h-5" />
                       ) : (
                         step.id
                       )}
                     </div>
                     <span
-                      className={`font-body text-xs mt-2 ${
+                      className={`font-body text-[10px] md:text-xs mt-2 text-center ${
                         currentStep >= step.id
                           ? "text-foreground"
                           : "text-muted-foreground"
@@ -100,7 +121,7 @@ const Booking = () => {
                   </div>
                   {index < steps.length - 1 && (
                     <div
-                      className={`w-12 md:w-24 h-0.5 mx-2 transition-all duration-300 ${
+                      className={`w-6 md:w-16 lg:w-24 h-0.5 mx-1 md:mx-2 transition-all duration-300 ${
                         currentStep > step.id ? "bg-primary" : "bg-border"
                       }`}
                     />
@@ -146,6 +167,14 @@ const Booking = () => {
                 />
               )}
               {currentStep === 4 && (
+                <CustomerInfo
+                  customerData={bookingData.customer}
+                  onUpdate={updateCustomerData}
+                  onNext={handleNext}
+                  onBack={handleBack}
+                />
+              )}
+              {currentStep === 5 && (
                 <BookingSummary
                   bookingData={bookingData}
                   onBack={handleBack}
