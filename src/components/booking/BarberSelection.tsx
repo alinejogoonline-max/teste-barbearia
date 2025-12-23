@@ -1,38 +1,9 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Star, Check, ArrowRight, ArrowLeft } from "lucide-react";
+import { Check, ArrowRight, ArrowLeft, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import type { Barber } from "@/pages/Booking";
-
-const barbers: Barber[] = [
-  {
-    id: "1",
-    name: "Carlos Silva",
-    specialty: "Cortes Clássicos",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
-    rating: 4.9,
-  },
-  {
-    id: "2",
-    name: "Rafael Santos",
-    specialty: "Design de Barba",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format&fit=crop&q=80",
-    rating: 4.8,
-  },
-  {
-    id: "3",
-    name: "Bruno Oliveira",
-    specialty: "Cortes Modernos",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
-    rating: 5.0,
-  },
-  {
-    id: "4",
-    name: "André Costa",
-    specialty: "Tratamentos Capilares",
-    image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&auto=format&fit=crop&q=80",
-    rating: 4.7,
-  },
-];
 
 interface BarberSelectionProps {
   selectedBarber: Barber | null;
@@ -42,6 +13,45 @@ interface BarberSelectionProps {
 }
 
 const BarberSelection = ({ selectedBarber, onSelect, onNext, onBack }: BarberSelectionProps) => {
+  const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBarbers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('barbers')
+          .select('id, name, specialty, avatar_url')
+          .eq('is_active', true)
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        setBarbers(data.map(b => ({
+          id: b.id,
+          name: b.name,
+          specialty: b.specialty || 'Barbeiro',
+          image: b.avatar_url || '',
+          rating: 5.0
+        })));
+      } catch (error) {
+        console.error('Erro ao carregar barbeiros:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBarbers();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="text-center mb-8">
@@ -53,7 +63,7 @@ const BarberSelection = ({ selectedBarber, onSelect, onNext, onBack }: BarberSel
         </p>
       </div>
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {barbers.map((barber) => {
           const isSelected = selectedBarber?.id === barber.id;
 
@@ -76,33 +86,40 @@ const BarberSelection = ({ selectedBarber, onSelect, onNext, onBack }: BarberSel
               )}
 
               <div className="relative w-20 h-20 mx-auto mb-4">
-                <img
-                  src={barber.image}
-                  alt={barber.name}
-                  className={`w-full h-full rounded-full object-cover border-2 ${
+                {barber.image ? (
+                  <img
+                    src={barber.image}
+                    alt={barber.name}
+                    className={`w-full h-full rounded-full object-cover border-2 ${
+                      isSelected ? "border-primary" : "border-border"
+                    }`}
+                  />
+                ) : (
+                  <div className={`w-full h-full rounded-full flex items-center justify-center bg-secondary border-2 ${
                     isSelected ? "border-primary" : "border-border"
-                  }`}
-                />
+                  }`}>
+                    <User className="w-10 h-10 text-muted-foreground" />
+                  </div>
+                )}
               </div>
 
               <h3 className="font-display text-lg font-semibold text-foreground mb-1">
                 {barber.name}
               </h3>
 
-              <p className="font-body text-sm text-muted-foreground mb-2">
+              <p className="font-body text-sm text-muted-foreground">
                 {barber.specialty}
               </p>
-
-              <div className="flex items-center justify-center gap-1">
-                <Star className="w-4 h-4 fill-primary text-primary" />
-                <span className="font-body text-sm font-medium text-foreground">
-                  {barber.rating}
-                </span>
-              </div>
             </motion.button>
           );
         })}
       </div>
+
+      {barbers.length === 0 && !isLoading && (
+        <p className="text-center text-muted-foreground py-8">
+          Nenhum barbeiro disponível no momento.
+        </p>
+      )}
 
       <div className="flex justify-between">
         <Button onClick={onBack} variant="outline" size="lg" className="gap-2">

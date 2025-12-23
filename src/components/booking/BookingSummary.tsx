@@ -2,9 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, Calendar, Clock, User, Scissors, CheckCircle2, Phone, Mail } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, User, Scissors, CheckCircle2, Phone, Mail, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import type { BookingData } from "@/pages/Booking";
 
 interface BookingSummaryProps {
@@ -18,15 +19,50 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
   const { toast } = useToast();
 
   const handleConfirm = async () => {
+    if (!bookingData.service || !bookingData.barber || !bookingData.date || !bookingData.time) {
+      toast({
+        title: "Erro",
+        description: "Dados incompletos. Por favor, revise seu agendamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setIsConfirmed(true);
-    toast({
-      title: "Agendamento Confirmado!",
-      description: `${bookingData.customer.name}, você receberá uma confirmação por WhatsApp.`,
-    });
+    
+    try {
+      const appointmentDate = format(bookingData.date, 'yyyy-MM-dd');
+      
+      const { error } = await supabase
+        .from('appointments')
+        .insert({
+          barber_id: bookingData.barber.id,
+          service_id: bookingData.service.id,
+          appointment_date: appointmentDate,
+          appointment_time: bookingData.time,
+          customer_name: bookingData.customer.name,
+          customer_phone: bookingData.customer.phone,
+          customer_email: bookingData.customer.email || null,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      setIsConfirmed(true);
+      toast({
+        title: "Agendamento Confirmado!",
+        description: `${bookingData.customer.name}, você receberá uma confirmação por WhatsApp.`,
+      });
+    } catch (error) {
+      console.error('Erro ao criar agendamento:', error);
+      toast({
+        title: "Erro ao agendar",
+        description: "Não foi possível confirmar seu agendamento. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isConfirmed) {
@@ -172,11 +208,9 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
 
           {/* Barber */}
           <div className="flex items-start gap-4 p-4 bg-secondary/50 rounded-lg">
-            <img
-              src={bookingData.barber?.image}
-              alt={bookingData.barber?.name}
-              className="w-12 h-12 rounded-lg object-cover border border-border"
-            />
+            <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <User className="w-6 h-6 text-primary" />
+            </div>
             <div>
               <p className="font-body text-sm text-muted-foreground mb-1">Profissional</p>
               <p className="font-display text-lg font-semibold text-foreground">
@@ -220,7 +254,7 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
         <div className="mt-6 pt-6 border-t border-border flex items-center justify-between">
           <span className="font-body text-lg text-muted-foreground">Total</span>
           <span className="font-display text-3xl font-bold text-gold-gradient">
-            R$ {bookingData.service?.price}
+            R$ {bookingData.service?.price.toFixed(2)}
           </span>
         </div>
       </div>
@@ -239,7 +273,7 @@ const BookingSummary = ({ bookingData, onBack }: BookingSummaryProps) => {
         >
           {isLoading ? (
             <>
-              <span className="animate-spin">⏳</span>
+              <Loader2 className="w-5 h-5 animate-spin" />
               Confirmando...
             </>
           ) : (
