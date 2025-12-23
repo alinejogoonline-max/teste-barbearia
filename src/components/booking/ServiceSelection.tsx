@@ -1,18 +1,9 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Scissors, Crown, Sparkles, Droplets, Clock, Check, ArrowRight } from "lucide-react";
+import { Scissors, Clock, Check, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import type { Service } from "@/pages/Booking";
-
-const services: Service[] = [
-  { id: "1", name: "Corte Clássico", price: 60, duration: 45 },
-  { id: "2", name: "Corte Premium", price: 120, duration: 90 },
-  { id: "3", name: "Barba Completa", price: 50, duration: 40 },
-  { id: "4", name: "Tratamento Capilar", price: 80, duration: 60 },
-  { id: "5", name: "Corte + Barba", price: 100, duration: 75 },
-  { id: "6", name: "Pigmentação", price: 150, duration: 120 },
-];
-
-const icons = [Scissors, Crown, Sparkles, Droplets, Scissors, Crown];
 
 interface ServiceSelectionProps {
   selectedService: Service | null;
@@ -21,6 +12,44 @@ interface ServiceSelectionProps {
 }
 
 const ServiceSelection = ({ selectedService, onSelect, onNext }: ServiceSelectionProps) => {
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('services')
+          .select('id, name, price, duration')
+          .eq('is_active', true)
+          .order('price', { ascending: true });
+
+        if (error) throw error;
+
+        setServices(data.map(s => ({
+          id: s.id,
+          name: s.name,
+          price: Number(s.price),
+          duration: s.duration
+        })));
+      } catch (error) {
+        console.error('Erro ao carregar serviços:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="text-center mb-8">
@@ -33,8 +62,7 @@ const ServiceSelection = ({ selectedService, onSelect, onNext }: ServiceSelectio
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mb-8">
-        {services.map((service, index) => {
-          const Icon = icons[index];
+        {services.map((service) => {
           const isSelected = selectedService?.id === service.id;
 
           return (
@@ -58,7 +86,7 @@ const ServiceSelection = ({ selectedService, onSelect, onNext }: ServiceSelectio
               <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${
                 isSelected ? "bg-primary/20" : "bg-secondary"
               }`}>
-                <Icon className={`w-6 h-6 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                <Scissors className={`w-6 h-6 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
               </div>
 
               <h3 className="font-display text-lg font-semibold text-foreground mb-1">
@@ -67,7 +95,7 @@ const ServiceSelection = ({ selectedService, onSelect, onNext }: ServiceSelectio
 
               <div className="flex items-center justify-between">
                 <span className="font-display text-xl font-bold text-primary">
-                  R$ {service.price}
+                  R$ {service.price.toFixed(2)}
                 </span>
                 <span className="font-body text-sm text-muted-foreground flex items-center gap-1">
                   <Clock className="w-4 h-4" />
@@ -78,6 +106,12 @@ const ServiceSelection = ({ selectedService, onSelect, onNext }: ServiceSelectio
           );
         })}
       </div>
+
+      {services.length === 0 && !isLoading && (
+        <p className="text-center text-muted-foreground py-8">
+          Nenhum serviço disponível no momento.
+        </p>
+      )}
 
       <div className="flex justify-end">
         <Button
