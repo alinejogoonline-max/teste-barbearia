@@ -6,6 +6,7 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   // Use relative base so the built site works on GitHub Pages
+  // Change this to your repository name if deploying to github.io/repo-name/
   base: "./",
   server: {
     host: "::",
@@ -19,5 +20,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    outDir: "dist",
+    sourcemap: false,
   },
 }));
